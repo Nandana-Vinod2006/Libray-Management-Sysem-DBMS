@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Members - Library Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="nav-brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2h11a2.5 2.5 0 0 1 2.5 2.5v15a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 19.5z"></path><path d="M6 22V4"></path><path d="M14 8h-4"></path><path d="M14 12h-4"></path></svg>
+            LMS
+        </a>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="books.html">Books</a></li>
+            <li><a href="members.html" class="active">Members</a></li>
+            <li><a href="transactions.html">Transactions</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Add New Member</h2>
+            </div>
+            <form id="addMemberForm">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" id="memberName" class="form-control" placeholder="Enter member name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" id="memberEmail" class="form-control" placeholder="Enter email address" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Member</button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Registered Members</h2>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Member ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="membersTableBody">
+                        <!-- Dynamic rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('addMemberForm');
+            const nameInput = document.getElementById('memberName');
+            const emailInput = document.getElementById('memberEmail');
+            const tableBody = document.getElementById('membersTableBody');
+
+            let members = JSON.parse(localStorage.getItem('lms_members')) || [];
+            let nextId = parseInt(localStorage.getItem('lms_members_next_id')) || 5001;
+
+            function renderTable() {
+                tableBody.innerHTML = '';
+                if(members.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No members registered yet. Add one above!</td></tr>';
+                    return;
+                }
+                const sorted = [...members].reverse();
+                sorted.forEach(member => {
+                    const actionBtn = `<button class="btn btn-primary btn-small btn-delete-member" style="background-color: var(--danger);" data-id="${member.id}">Remove</button>`;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>#M${member.id}</strong></td>
+                        <td>${member.name}</td>
+                        <td>${member.email}</td>
+                        <td>${actionBtn}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            }
+
+            tableBody.addEventListener('click', (e) => {
+                if(e.target.classList.contains('btn-delete-member')) {
+                    if(confirm("Are you sure you want to remove this member?")) {
+                        const id = parseInt(e.target.getAttribute('data-id'), 10);
+                        members = members.filter(m => m.id !== id);
+                        localStorage.setItem('lms_members', JSON.stringify(members));
+                        renderTable();
+                    }
+                }
+            });
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newMember = {
+                    id: nextId++,
+                    name: nameInput.value,
+                    email: emailInput.value
+                };
+                members.push(newMember);
+                localStorage.setItem('lms_members', JSON.stringify(members));
+                localStorage.setItem('lms_members_next_id', nextId);
+                
+                form.reset();
+                renderTable();
+            });
+
+            renderTable();
+        });
+    </script>
+</body>
+</html>

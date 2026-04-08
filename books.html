@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Books - Library Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="nav-brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2h11a2.5 2.5 0 0 1 2.5 2.5v15a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 19.5z"></path><path d="M6 22V4"></path><path d="M14 8h-4"></path><path d="M14 12h-4"></path></svg>
+            LMS
+        </a>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="books.html" class="active">Books</a></li>
+            <li><a href="members.html">Members</a></li>
+            <li><a href="transactions.html">Transactions</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Add New Book</h2>
+            </div>
+            <form id="addBookForm">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Book Title</label>
+                        <input type="text" id="bookTitle" class="form-control" placeholder="Enter book title" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Author Name</label>
+                        <input type="text" id="bookAuthor" class="form-control" placeholder="Enter author name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Total Quantity</label>
+                        <input type="number" id="bookQty" class="form-control" placeholder="e.g. 5" min="1" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Book</button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Book Directory</h2>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Book ID</th>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Total Qty</th>
+                            <th>Availability</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="booksTableBody">
+                        <!-- Dynamic rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('addBookForm');
+            const titleInput = document.getElementById('bookTitle');
+            const authorInput = document.getElementById('bookAuthor');
+            const qtyInput = document.getElementById('bookQty');
+            const tableBody = document.getElementById('booksTableBody');
+
+            let books = JSON.parse(localStorage.getItem('lms_books')) || [];
+            let nextId = parseInt(localStorage.getItem('lms_books_next_id')) || 1001;
+
+            function renderTable() {
+                tableBody.innerHTML = '';
+                if(books.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No books available yet. Add some above!</td></tr>';
+                    return;
+                }
+                const sorted = [...books].reverse();
+                sorted.forEach(book => {
+                    const total = book.totalQty || 1;
+                    const avail = book.availableQty !== undefined ? book.availableQty : 1;
+                    
+                    const actionBtn = `<button class="btn btn-primary btn-small btn-delete-book" style="background-color: var(--danger);" data-id="${book.id}">Remove</button>`;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>#B${book.id}</strong></td>
+                        <td>${book.title}</td>
+                        <td>${book.author}</td>
+                        <td>${total}</td>
+                        <td>
+                            <span class="badge ${avail > 0 ? 'badge-success' : 'badge-danger'}">
+                                ${avail} Available
+                            </span>
+                        </td>
+                        <td>${actionBtn}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            }
+
+            tableBody.addEventListener('click', (e) => {
+                if(e.target.classList.contains('btn-delete-book')) {
+                    if(confirm("Are you sure you want to remove this book?")) {
+                        const id = parseInt(e.target.getAttribute('data-id'), 10);
+                        books = books.filter(b => b.id !== id);
+                        localStorage.setItem('lms_books', JSON.stringify(books));
+                        renderTable();
+                    }
+                }
+            });
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const qty = parseInt(qtyInput.value, 10);
+                const newBook = {
+                    id: nextId++,
+                    title: titleInput.value,
+                    author: authorInput.value,
+                    totalQty: qty,
+                    availableQty: qty
+                };
+                books.push(newBook);
+                localStorage.setItem('lms_books', JSON.stringify(books));
+                localStorage.setItem('lms_books_next_id', nextId);
+                
+                form.reset();
+                renderTable();
+            });
+
+            renderTable();
+        });
+    </script>
+</body>
+</html>

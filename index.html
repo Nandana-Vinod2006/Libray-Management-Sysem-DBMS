@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="home.html" class="nav-brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2h11a2.5 2.5 0 0 1 2.5 2.5v15a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 19.5z"></path><path d="M6 22V4"></path><path d="M14 8h-4"></path><path d="M14 12h-4"></path></svg>
+            LMS
+        </a>
+        <ul class="nav-links">
+            <li><a href="home.html" class="active">Home</a></li>
+            <li><a href="books.html">Books</a></li>
+            <li><a href="members.html">Members</a></li>
+            <li><a href="transactions.html">Transactions</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="hero">
+            <h1>Welcome to Library Management System</h1>
+            <p>Your one-stop solution for managing books, members, and library transactions efficiently and effortlessly.</p>
+            <br><br>
+            <div style="display: flex; justify-content: center; gap: 1rem;">
+                <a href="books.html" class="btn btn-primary">Browse Books</a>
+                <a href="members.html" class="btn btn-primary" style="background-color: white; color: var(--primary-color); border: 1px solid var(--border-color);">Manage Members</a>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="panel">
+                <h3>Quick Stats</h3>
+                <br>
+                <ul>
+                    <li style="margin-bottom: 0.75rem; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                        <strong>Total Book Copies:</strong> <span id="statTotalBooks">0</span>
+                    </li>
+                    <li style="margin-bottom: 0.75rem; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                        <strong>Active Members:</strong> <span id="statActiveMembers">0</span>
+                    </li>
+                    <li style="display: flex; justify-content: space-between;">
+                        <strong>Total Books Currently Issued:</strong> <span id="statIssuedBooks">0</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="panel">
+                <h3>Recent Updates</h3>
+                <br>
+                <ul>
+                    <li style="margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                        📚 New arrivals added to Science section
+                    </li>
+                    <li style="margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                        ⚙️ System maintenance scheduled for this weekend
+                    </li>
+                    <li>
+                        ⚠️ General overdue fee policy updated
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const books = JSON.parse(localStorage.getItem('lms_books')) || [];
+            const members = JSON.parse(localStorage.getItem('lms_members')) || [];
+            
+            let totalCopies = 0;
+            let issuedCopies = 0;
+
+            books.forEach(b => {
+                const total = b.totalQty || 1;
+                const avail = b.availableQty !== undefined ? b.availableQty : 1;
+                totalCopies += parseInt(total, 10);
+                issuedCopies += (parseInt(total, 10) - parseInt(avail, 10));
+            });
+            
+            document.getElementById('statTotalBooks').textContent = totalCopies;
+            document.getElementById('statActiveMembers').textContent = members.length;
+            document.getElementById('statIssuedBooks').textContent = issuedCopies;
+        });
+    </script>
+</body>
+</html>

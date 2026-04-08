@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - Library Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="nav-brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2h11a2.5 2.5 0 0 1 2.5 2.5v15a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 19.5z"></path><path d="M6 22V4"></path><path d="M14 8h-4"></path><path d="M14 12h-4"></path></svg>
+            LMS
+        </a>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="books.html">Books</a></li>
+            <li><a href="members.html">Members</a></li>
+            <li><a href="transactions.html" class="active">Transactions</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <!-- New form for Transactions -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Issue a Book (New Transaction)</h2>
+            </div>
+            <form id="addTransactionForm">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Select Book</label>
+                        <select id="transBook" class="form-control" required>
+                            <option value="">-- Choose a Book --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Select Member</label>
+                        <select id="transMember" class="form-control" required>
+                            <option value="">-- Choose a Member --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Issue Date</label>
+                        <input type="date" id="transIssue" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Return Date</label>
+                        <input type="date" id="transReturn" class="form-control" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Transaction</button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Recent Transactions</h2>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tr. ID</th>
+                            <th>Book Name</th>
+                            <th>Member Name</th>
+                            <th>Issue Date</th>
+                            <th>Expected Return</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionsTableBody">
+                        <!-- Dynamic rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('addTransactionForm');
+            const bookSelect = document.getElementById('transBook');
+            const memberSelect = document.getElementById('transMember');
+            const issueInput = document.getElementById('transIssue');
+            const returnInput = document.getElementById('transReturn');
+            const tableBody = document.getElementById('transactionsTableBody');
+
+            // set today's date automatically
+            const today = new Date().toISOString().split('T')[0];
+            issueInput.value = today;
+
+            let transactions = JSON.parse(localStorage.getItem('lms_transactions')) || [];
+            let nextId = parseInt(localStorage.getItem('lms_transactions_next_id')) || 1001;
+            let books = JSON.parse(localStorage.getItem('lms_books')) || [];
+            let members = JSON.parse(localStorage.getItem('lms_members')) || [];
+
+            function refreshData() {
+                books = JSON.parse(localStorage.getItem('lms_books')) || [];
+                members = JSON.parse(localStorage.getItem('lms_members')) || [];
+            }
+
+            function populateSelects() {
+                refreshData();
+                bookSelect.innerHTML = '<option value="">-- Choose a Book --</option>';
+                books.forEach(b => {
+                    const avail = b.availableQty !== undefined ? b.availableQty : 1;
+                    const opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.textContent = `${b.title} (Avail: ${avail})`;
+                    if(avail <= 0) {
+                        opt.disabled = true;
+                        opt.textContent += ' - OUT OF STOCK';
+                    }
+                    bookSelect.appendChild(opt);
+                });
+
+                memberSelect.innerHTML = '<option value="">-- Choose a Member --</option>';
+                members.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.name;
+                    opt.textContent = m.name;
+                    memberSelect.appendChild(opt);
+                });
+            }
+
+            function renderTable() {
+                tableBody.innerHTML = '';
+                if(transactions.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No transactions recorded yet.</td></tr>';
+                    return;
+                }
+                const sorted = [...transactions].reverse();
+                sorted.forEach(t => {
+                    const isIssued = t.status === 'Issued';
+                    
+                    const actionBtn = isIssued 
+                        ? `<button class="btn btn-primary btn-small btn-return" data-id="${t.id}">Mark Returned</button>`
+                        : `<span style="color: var(--text-muted); font-size: 0.875rem;">✔ Returned</span>`;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>#T${String(t.id).padStart(4, '0')}</strong></td>
+                        <td>${t.bookName}</td>
+                        <td>${t.member}</td>
+                        <td>${t.issueDate}</td>
+                        <td>${t.returnDate}</td>
+                        <td><span class="badge ${isIssued ? 'badge-warning' : 'badge-success'}">${t.status}</span></td>
+                        <td>${actionBtn}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            }
+
+            // Handle the Mark Returned button click dynamically
+            tableBody.addEventListener('click', (e) => {
+                if(e.target.classList.contains('btn-return')) {
+                    const txId = parseInt(e.target.getAttribute('data-id'), 10);
+                    const txIndex = transactions.findIndex(t => t.id === txId);
+                    
+                    if(txIndex > -1) {
+                        refreshData();
+                        const bookId = transactions[txIndex].bookId;
+                        const bookIndex = books.findIndex(b => b.id == bookId);
+                        
+                        if(bookIndex > -1) {
+                            // Increase available quantity upon return
+                            const currentAvail = books[bookIndex].availableQty !== undefined ? books[bookIndex].availableQty : 1;
+                            books[bookIndex].availableQty = currentAvail + 1;
+                            localStorage.setItem('lms_books', JSON.stringify(books));
+                        }
+
+                        transactions[txIndex].status = 'Returned';
+                        localStorage.setItem('lms_transactions', JSON.stringify(transactions));
+                        
+                        renderTable();
+                        populateSelects();
+                    }
+                }
+            });
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                refreshData();
+                
+                const bookId = parseInt(bookSelect.value, 10);
+                const bookIndex = books.findIndex(b => b.id === bookId);
+                
+                if(bookIndex === -1) return;
+                
+                const avail = books[bookIndex].availableQty !== undefined ? books[bookIndex].availableQty : 1;
+                
+                if(avail <= 0) {
+                    alert('Error: This book is currently out of stock.');
+                    return;
+                }
+
+                // Decrease available quantity upon issue
+                books[bookIndex].availableQty = avail - 1;
+                localStorage.setItem('lms_books', JSON.stringify(books));
+
+                const newT = {
+                    id: nextId++,
+                    bookId: bookId,
+                    bookName: books[bookIndex].title,
+                    member: memberSelect.value,
+                    issueDate: issueInput.value,
+                    returnDate: returnInput.value,
+                    status: 'Issued'
+                };
+                transactions.push(newT);
+                localStorage.setItem('lms_transactions', JSON.stringify(transactions));
+                localStorage.setItem('lms_transactions_next_id', nextId);
+                
+                form.reset();
+                issueInput.value = today;
+                renderTable();
+                populateSelects();
+            });
+
+            populateSelects();
+            renderTable();
+        });
+    </script>
+</body>
+</html>
